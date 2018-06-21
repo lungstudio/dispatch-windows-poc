@@ -61,6 +61,15 @@ class OrdersController < ApplicationController
     end
   end
 
+  def reset
+    order = Order.find(params[:id])
+    order.update!(driver_id: nil, status: :pending)
+
+    Redis.new.set("order:#{order_id}:lottery_end_time", nil)
+
+    redirect_to orders_url
+  end
+
   private
 
   # Use callbacks to share common setup or constraints between actions.

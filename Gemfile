@@ -41,6 +41,8 @@ gem 'bootsnap', '>= 1.1.0', require: false
 
 gem 'hiredis'
 
+gem 'em-hiredis'
+
 gem 'sidekiq'
 
 group :development, :test do

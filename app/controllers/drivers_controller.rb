@@ -73,19 +73,27 @@ class DriversController < ApplicationController
     order_request_channel_name = "order:#{order.id}:request"
     driver_id = params[:id]
 
+    # check lottery_end_time on redis
     lottery_end_time = redis.get(lottery_end_time_key)
     Rails.logger.info("DriversController.pick - lottery_end_time: #{lottery_end_time || 'nil'}")
 
     if lottery_end_time
-      return render_forbidden if (Time.current.to_f * 1000).to_i > lottery_end_time.to_i
+      if (Time.current.to_f * 1000).to_i > lottery_end_time.to_i
+        return render_forbidden
+      else
+        redis.publish(order_request_channel_name, { driver_id: driver_id }.to_json)
+      end
     else
+      Rails.logger.info('DriversController.pick - lottery_end_time is nil, triggering a Lottery sidekiq job')
       OrderRequestLotteryWorker.perform_async(order.id, driver_id)
     end
 
+    # subscribe to channel
     winner_id = nil
     start_time = Time.current
     begin
-      redis.subscribe_with_timeout(5, order_request_channel_name) do |on|
+      redis.subscribe_with_timeout(15, order_request_channel_name) do |on|
+        # decode the message, check if the message is winner_id
         on.message do |_, message|
           m = JSON.parse(message)
           if m&.key?('winner_id')
@@ -103,6 +111,7 @@ class DriversController < ApplicationController
     end
     Rails.logger.info("DriversController.pick - subscribe time: #{(Time.current - start_time).to_f}s")
 
+    # check if I am the winner?
     if winner_id == driver_id
       order.with_lock do
         order.update(status: :picked, driver_id: driver_id)
