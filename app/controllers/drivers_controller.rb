@@ -1,5 +1,7 @@
+# frozen_string_literal: true
+
 class DriversController < ApplicationController
-  before_action :set_driver, only: [:show, :edit, :update, :destroy]
+  before_action :set_driver, only: %i[show edit update destroy]
 
   # GET /drivers
   # GET /drivers.json
@@ -9,8 +11,7 @@ class DriversController < ApplicationController
 
   # GET /drivers/1
   # GET /drivers/1.json
-  def show
-  end
+  def show; end
 
   # GET /drivers/new
   def new
@@ -18,8 +19,7 @@ class DriversController < ApplicationController
   end
 
   # GET /drivers/1/edit
-  def edit
-  end
+  def edit; end
 
   # POST /drivers
   # POST /drivers.json
@@ -61,14 +61,73 @@ class DriversController < ApplicationController
     end
   end
 
-  private
-    # Use callbacks to share common setup or constraints between actions.
-    def set_driver
-      @driver = Driver.find(params[:id])
+  def pick
+    Rails.logger.info("DriversController.pick - START, params: #{params.as_json}")
+
+    redis = Redis.new
+
+    order = Order.find_by(id: params[:order_id])
+    return render_forbidden if !order || order.status == 'picked'
+
+    lottery_end_time_key = "order:#{order.id}:lottery_end_time"
+    order_request_channel_name = "order:#{order.id}:request"
+    driver_id = params[:id]
+
+    lottery_end_time = redis.get(lottery_end_time_key)
+    Rails.logger.info("DriversController.pick - lottery_end_time: #{lottery_end_time || 'nil'}")
+
+    if lottery_end_time
+      return render_forbidden if (Time.current.to_f * 1000).to_i > lottery_end_time.to_i
+    else
+      OrderRequestLotteryWorker.perform_async(order.id, driver_id)
     end
 
-    # Never trust parameters from the scary internet, only allow the white list through.
-    def driver_params
-      params.require(:driver).permit(:name)
+    winner_id = nil
+    start_time = Time.current
+    begin
+      redis.subscribe_with_timeout(5, order_request_channel_name) do |on|
+        on.message do |_, message|
+          m = JSON.parse(message)
+          if m&.key?('winner_id')
+            winner_id = m['winner_id']
+            redis.unsubscribe
+          end
+        rescue JSON::ParserError => e
+          Rails.logger.error e.message
+          Rails.logger.error e.backtrace.join("\n")
+        end
+      end
+    rescue Redis::TimeoutError
+      Rails.logger.info("DriversController.pick - lottery timeout, driver id: #{driver_id}")
+      return render_forbidden
     end
+    Rails.logger.info("DriversController.pick - subscribe time: #{(Time.current - start_time).to_f}s")
+
+    if winner_id == driver_id
+      order.with_lock do
+        order.update(status: :picked, driver_id: driver_id)
+      end
+      render json: { order: order }, status: :ok
+    else
+      render_forbidden
+    end
+  ensure
+    Rails.logger.info('DriversController.pick- END')
+  end
+
+  private
+
+  # Use callbacks to share common setup or constraints between actions.
+  def set_driver
+    @driver = Driver.find(params[:id])
+  end
+
+  # Never trust parameters from the scary internet, only allow the white list through.
+  def driver_params
+    params.require(:driver).permit(:name)
+  end
+
+  def render_forbidden
+    render json: { error: 'you are not allowed to pick this order' }, status: :forbidden
+  end
 end

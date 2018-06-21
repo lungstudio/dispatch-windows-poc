@@ -5,6 +5,7 @@
 <table>
   <thead>
     <tr>
+      <th>ID</th>
       <th>Name</th>
       <th colspan="3"></th>
     </tr>
@@ -13,6 +14,7 @@
   <tbody>
     <% @drivers.each do |driver| %>
       <tr>
+        <td><%= driver.id %></td>
         <td><%= driver.name %></td>
         <td><%= link_to 'Show', driver %></td>
         <td><%= link_to 'Edit', edit_driver_path(driver) %></td>
