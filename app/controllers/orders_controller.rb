@@ -65,9 +65,13 @@ class OrdersController < ApplicationController
     order = Order.find(params[:id])
     order.update!(driver_id: nil, status: :pending)
 
-    Redis.new.set("order:#{order_id}:lottery_end_time", nil)
+    Redis.new.del("order:#{order.id}:lottery_end_time")
 
     redirect_to orders_url
+  end
+
+  def start_lottery
+    OrderRequestLotteryWorker.perform_async(params[:id])
   end
 
   private

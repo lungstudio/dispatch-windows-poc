@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class DriversController < ApplicationController
+  LOTTERY_TIMEOUT_SEC = 15
   before_action :set_driver, only: %i[show edit update destroy]
 
   # GET /drivers
@@ -66,8 +67,8 @@ class DriversController < ApplicationController
 
     redis = Redis.new
 
-    order = Order.find_by(id: params[:order_id])
-    return render_forbidden if !order || order.status == 'picked'
+    order = Order.find_by(id: params[:order_id], status: 'pending')
+    return render_forbidden(:order_not_found) unless order
 
     lottery_end_time_key = "order:#{order.id}:lottery_end_time"
     order_request_channel_name = "order:#{order.id}:request"
@@ -77,22 +78,18 @@ class DriversController < ApplicationController
     lottery_end_time = redis.get(lottery_end_time_key)
     Rails.logger.info("DriversController.pick - lottery_end_time: #{lottery_end_time || 'nil'}")
 
-    if lottery_end_time
-      if (Time.current.to_f * 1000).to_i > lottery_end_time.to_i
-        return render_forbidden
-      else
-        redis.publish(order_request_channel_name, { driver_id: driver_id }.to_json)
-      end
+    if (Time.current.to_f * 1000).to_i <= lottery_end_time.to_i
+      redis.publish(order_request_channel_name, { driver_id: driver_id }.to_json)
     else
-      Rails.logger.info('DriversController.pick - lottery_end_time is nil, triggering a Lottery sidekiq job')
-      OrderRequestLotteryWorker.perform_async(order.id, driver_id)
+      # lottery has ended, try picking with first-come-first-served basis
+      return pick_order(order, driver_id)
     end
 
     # subscribe to channel
     winner_id = nil
     start_time = Time.current
     begin
-      redis.subscribe_with_timeout(15, order_request_channel_name) do |on|
+      redis.subscribe_with_timeout(LOTTERY_TIMEOUT_SEC, order_request_channel_name) do |on|
         # decode the message, check if the message is winner_id
         on.message do |_, message|
           m = JSON.parse(message)
@@ -107,24 +104,31 @@ class DriversController < ApplicationController
       end
     rescue Redis::TimeoutError
       Rails.logger.info("DriversController.pick - lottery timeout, driver id: #{driver_id}")
-      return render_forbidden
+      return render_forbidden(:lottery_timeout)
     end
     Rails.logger.info("DriversController.pick - subscribe time: #{(Time.current - start_time).to_f}s")
 
     # check if I am the winner?
     if winner_id == driver_id
-      order.with_lock do
-        order.update(status: :picked, driver_id: driver_id)
-      end
-      render json: { order: order }, status: :ok
+      return pick_order(order, driver_id)
     else
-      render_forbidden
+      render_forbidden(:you_loser)
     end
   ensure
     Rails.logger.info('DriversController.pick- END')
   end
 
   private
+
+  def pick_order(order, driver_id)
+    order.with_lock do
+      order.send('pick')
+      order.update!(driver_id: driver_id)
+    end
+    render json: { order: order }, status: :ok
+  rescue AASM::InvalidTransition
+    render_forbidden(:order_has_been_picked)
+  end
 
   # Use callbacks to share common setup or constraints between actions.
   def set_driver
@@ -136,7 +140,7 @@ class DriversController < ApplicationController
     params.require(:driver).permit(:name)
   end
 
-  def render_forbidden
-    render json: { error: 'you are not allowed to pick this order' }, status: :forbidden
+  def render_forbidden(err_key)
+    render json: { error: 'you are not allowed to pick this order', error_key: err_key }, status: :forbidden
   end
 end
