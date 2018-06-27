@@ -23,7 +23,7 @@
 
   <div class="field">
     <%= form.label :status %>
-    <%= form.select :status, Order.statuses.keys %>
+    <%= form.select :status, Order.aasm.states.map(&:name) %>
   </div>
 
   <div class="actions">
