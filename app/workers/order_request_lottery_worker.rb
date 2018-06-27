@@ -4,41 +4,65 @@ class OrderRequestLotteryWorker
   include Sidekiq::Worker
   LOTTERY_INTERVAL_SEC = 10
 
-  def perform(order_id)
-    Rails.logger.info("OrderRequestLotteryWorker.perform - START, order_id: #{order_id}")
+  def perform
+    Rails.logger.info('OrderRequestLotteryWorker.perform - START')
+
+    Thread.abort_on_exception = true
 
     redis = Redis.new
-    lottery_end_time_key = "order:#{order_id}:lottery_end_time"
-    channel_name = "order:#{order_id}:request"
 
-    # set lottery end time
-    lottery_end_time = ((Time.current.to_f + LOTTERY_INTERVAL_SEC) * 1000).to_i # store with millisecond, as the timeframe is small therefore milliseconds should count
-    redis.set(lottery_end_time_key, lottery_end_time)
-    Rails.logger.info("OrderRequestLotteryWorker.perform - redis set, key: #{lottery_end_time_key}, value: #{lottery_end_time}")
+    redis.psubscribe('order:*:request') do |on|
+      on.pmessage do |_, channel, msg|
+        if msg == 'start_lottery'
+          order_id = channel.split(':')&.at(1)&.to_i
 
-    drivers = []
-    start_time = Time.current
-    redis.without_reconnect do
-      redis.subscribe_with_timeout(LOTTERY_INTERVAL_SEC, channel_name) do |on|
-        on.message do |_, message|
-          drivers.push(JSON.parse(message)['driver_id'])
+          return if order_id.blank? || order_id <= 0
+
+          create_lottery_subscription_thread(order_id)
         end
       end
-    rescue Redis::TimeoutError
-      # this is expected, do nothing
     end
-    Rails.logger.info("OrderRequestLotteryWorker.perform - subscribe time: #{(Time.current - start_time).to_f}s")
-    Rails.logger.info("OrderRequestLotteryWorker.perform - drivers participated: #{drivers.as_json}")
-
-    if drivers.any?
-      winner_id = OrderRequestLotteryService.draw(drivers)
-      Rails.logger.info("OrderRequestLotteryWorker.perform - winner: #{winner_id}")
-      redis.publish(channel_name, { winner_id: winner_id }.to_json)
-    end
-  rescue StandardError => e
-    Rails.logger.error e.message
-    Rails.logger.error e.backtrace.join("\n")
   ensure
     Rails.logger.info('OrderRequestLotteryWorker.perform - END')
+  end
+
+  private
+
+  def create_lottery_subscription_thread(order_id)
+    Thread.new(order_id, LOTTERY_INTERVAL_SEC) do |order_id, lottery_interval|
+      Rails.logger.info("OrderRequestLotteryWorker.create_lottery_subscription_thread - START, order_id: #{order_id}")
+      redis = Redis.new
+
+      drivers = []
+      start_time = Time.current
+
+      redis.without_reconnect do
+        redis.subscribe_with_timeout(lottery_interval, "order:#{order_id}:request") do |on|
+          on.message do |_, msg|
+            driver_id = parse_driver_id(msg)
+            drivers.push(driver_id) if driver_id
+          end
+        end
+      rescue Redis::TimeoutError
+        # this is expected, do nothing
+      end
+
+      Rails.logger.info("OrderRequestLotteryWorker.create_lottery_subscription_thread - order_id: #{order_id}, subscribe time: #{(Time.current - start_time).to_f}s")
+      Rails.logger.info("OrderRequestLotteryWorker.create_lottery_subscription_thread - order_id: #{order_id}, drivers participated: #{drivers.as_json}")
+
+      if drivers.any?
+        winner_id = OrderRequestLotteryService.draw(drivers)
+        Rails.logger.info("OrderRequestLotteryWorker.create_lottery_subscription_thread - order_id: #{order_id}, winner: #{winner_id}")
+        redis.publish("order:#{order_id}:request", { winner_id: winner_id }.to_json)
+      end
+    ensure
+      Rails.logger.info("OrderRequestLotteryWorker.create_lottery_subscription_thread - END, order_id: #{order_id}")
+    end
+  end
+
+  def parse_driver_id(raw_msg)
+    JSON.parse(raw_msg)&.fetch('driver_id', nil)
+  rescue JSON::ParserError => e
+    Rails.logger.error "OrderRequestLotteryWorker.parse_driver_id - failed to parse #{raw_msg}"
   end
 end
