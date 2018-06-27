@@ -70,10 +70,6 @@ class OrdersController < ApplicationController
     redirect_to orders_url
   end
 
-  def start_lottery
-    OrderRequestLotteryWorker.perform_async(params[:id])
-  end
-
   private
 
   # Use callbacks to share common setup or constraints between actions.
