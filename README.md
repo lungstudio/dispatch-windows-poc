@@ -5,20 +5,16 @@ application up and running.
 
 Things you may want to cover:
 
-* Ruby version
+1. db migration
 
-* System dependencies
+1. `redis-server`
 
-* Configuration
+2. `bundle exec rake lottery_channel_monitor:run`
 
-* Database creation
+3. `rails s`
 
-* Database initialization
+4. http://localhost:3000/users --> create users, http://localhost:3000/drivers --> create drivers,  http://localhost:3000/orders --> create orders
 
-* How to run the test suite
+5. can create order through http://localhost:3000/users/{id}
 
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+6. don't want to type so much, ask @gogolung directly :trollface:
