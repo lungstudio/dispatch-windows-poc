@@ -11,7 +11,7 @@ class Order < ApplicationRecord
     state :picked
 
     event :pick do
-      transitions from: :pending, to: :picked, success: :assgin_driver
+      transitions from: :pending, to: :picked
     end
   end
 
