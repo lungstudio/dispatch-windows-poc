@@ -2,6 +2,7 @@
 
 namespace :lottery_channel_monitor do
   task run: :environment do
+    Rails.logger.info('lottery_channel_monitor.rake - before signal trap')
     # Trap ^C
     Signal.trap('INT') do
       puts 'exiting with signal INT'

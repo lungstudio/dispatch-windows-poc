@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class OrderRequestLotteryWorker
-  include Sidekiq::Worker
   LOTTERY_INTERVAL_SEC = ENV['DISPATCH_WINDOW_SECOND']&.to_i || 10
 
   def perform
