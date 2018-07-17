@@ -14,6 +14,7 @@ namespace :lottery_channel_monitor do
       exit
     end
 
+    Rails.logger.info('lottery_channel_monitor.rake - Perform')
     worker = OrderRequestLotteryWorker.new
     worker.perform
   end
