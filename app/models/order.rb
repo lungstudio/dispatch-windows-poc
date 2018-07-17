@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Order < ApplicationRecord
-  LOTTERY_INTERVAL_SEC = 10
+  LOTTERY_INTERVAL_SEC = ENV['DISPATCH_WINDOW_SECOND'] || 10
   include AASM
 
   after_create :push_lottery_message

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class DriversController < ApplicationController
-  LOTTERY_TIMEOUT_SEC = 15
+  LOTTERY_TIMEOUT_SEC = (ENV['DISPATCH_WINDOW_SECOND'] || 10) + 5
   before_action :set_driver, only: %i[show edit update destroy]
 
   # GET /drivers

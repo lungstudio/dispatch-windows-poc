@@ -2,7 +2,7 @@
 
 class OrderRequestLotteryWorker
   include Sidekiq::Worker
-  LOTTERY_INTERVAL_SEC = 10
+  LOTTERY_INTERVAL_SEC = ENV['DISPATCH_WINDOW_SECOND'] || 10
 
   def perform
     Rails.logger.info('OrderRequestLotteryWorker.perform - START')
