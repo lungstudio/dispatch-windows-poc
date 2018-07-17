@@ -9,7 +9,7 @@ class OrderRequestLotteryWorker
 
     Thread.abort_on_exception = true
 
-    redis = Redis.new
+    redis = NEW_REDIS_CLIENT
 
     redis.psubscribe('order:*:request') do |on|
       on.pmessage do |_, channel, msg|
@@ -31,7 +31,7 @@ class OrderRequestLotteryWorker
   def create_lottery_subscription_thread(order_id)
     Thread.new(order_id, LOTTERY_INTERVAL_SEC) do |order_id, lottery_interval|
       Rails.logger.info("OrderRequestLotteryWorker.create_lottery_subscription_thread - START, order_id: #{order_id}")
-      redis = Redis.new
+      redis = NEW_REDIS_CLIENT
 
       drivers = []
       start_time = Time.current

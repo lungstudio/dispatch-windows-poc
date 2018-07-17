@@ -65,7 +65,7 @@ class DriversController < ApplicationController
   def pick
     Rails.logger.info("DriversController.pick - START, params: #{params.as_json}")
 
-    redis = Redis.new
+    redis = NEW_REDIS_CLIENT
 
     order = Order.find_by(id: params[:order_id], status: 'pending')
     return render_forbidden(:order_not_found) unless order
