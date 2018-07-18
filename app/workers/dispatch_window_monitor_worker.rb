@@ -4,6 +4,8 @@ class DispatchWindowMonitorWorker
   DISPATCH_WINDOW_INTERVAL_SEC = ENV['DISPATCH_WINDOW_SECOND']&.to_i || 10
 
   def perform
+    $stdout.sync = true
+
     Rails.logger.info('DispatchWindowMonitorWorker.perform - START')
 
     Thread.abort_on_exception = true
@@ -29,6 +31,8 @@ class DispatchWindowMonitorWorker
 
   def create_dispatch_window_subscription_thread(order_id)
     Thread.new(order_id, DISPATCH_WINDOW_INTERVAL_SEC) do |order_id, dispatch_window_interval|
+      $stdout.sync = true
+
       Rails.logger.info("DispatchWindowMonitorWorker.create_dispatch_window_subscription_thread - START, order_id: #{order_id}")
       redis = RedisHelper.create_new_client
 
