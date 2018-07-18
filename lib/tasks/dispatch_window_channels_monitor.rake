@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-namespace :lottery_channel_monitor do
+namespace :dispatch_window_channels_monitor do
   task run: :environment do
-    Rails.logger.info('lottery_channel_monitor.rake - before signal trap')
+    Rails.logger.info('dispatch_window_channels_monitor.rake - before signal trap')
     # Trap ^C
     Signal.trap('INT') do
       puts 'exiting with signal INT'
@@ -15,8 +15,8 @@ namespace :lottery_channel_monitor do
       exit
     end
 
-    Rails.logger.info('lottery_channel_monitor.rake - Perform')
-    worker = OrderRequestLotteryWorker.new
+    Rails.logger.info('dispatch_window_channels_monitor.rake - Perform')
+    worker = DispatchWindowMonitorWorker.new
     worker.perform
   end
 end

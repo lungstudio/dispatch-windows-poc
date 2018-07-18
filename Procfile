@@ -1,2 +1,2 @@
 web: bundle exec rails server
-dispatch_window_worker: bundle exec rake lottery_channel_monitor:run
+dispatch_window_worker: bundle exec rake dispatch_window_channels_monitor:run

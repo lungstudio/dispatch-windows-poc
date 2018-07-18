@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-module OrderRequestLotteryService
+module DispatchWindowWinnerPickerService
   class << self
-    def draw(driver_list)
+    def pick(driver_list)
       driver_list.sample
     end
   end
