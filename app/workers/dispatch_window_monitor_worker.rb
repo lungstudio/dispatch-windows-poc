@@ -8,7 +8,7 @@ class DispatchWindowMonitorWorker
 
     Thread.abort_on_exception = true
 
-    redis = NEW_REDIS_CLIENT
+    redis = RedisHelper.create_new_client
 
     redis.psubscribe('order:*:request') do |on|
       on.pmessage do |_, channel, msg|
@@ -28,9 +28,9 @@ class DispatchWindowMonitorWorker
   private
 
   def create_dispatch_window_subscription_thread(order_id)
-    t = Thread.new(order_id, DISPATCH_WINDOW_INTERVAL_SEC) do |order_id, dispatch_window_interval|
+    Thread.new(order_id, DISPATCH_WINDOW_INTERVAL_SEC) do |order_id, dispatch_window_interval|
       Rails.logger.info("DispatchWindowMonitorWorker.create_dispatch_window_subscription_thread - START, order_id: #{order_id}")
-      redis = NEW_REDIS_CLIENT
+      redis = RedisHelper.create_new_client
 
       drivers = []
       start_time = Time.current
@@ -60,8 +60,6 @@ class DispatchWindowMonitorWorker
     ensure
       Rails.logger.info("DispatchWindowMonitorWorker.create_dispatch_window_subscription_thread - END, order_id: #{order_id}")
     end
-
-    t.join
   end
 
   def parse_driver_id(raw_msg)

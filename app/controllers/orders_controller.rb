@@ -65,7 +65,7 @@ class OrdersController < ApplicationController
     order = Order.find(params[:id])
     order.update!(driver_id: nil, status: :pending)
 
-    NEW_REDIS_CLIENT.del("order:#{order.id}:lottery_end_time")
+    RedisHelper.create_new_client.del("order:#{order.id}:lottery_end_time")
 
     redirect_to orders_url
   end

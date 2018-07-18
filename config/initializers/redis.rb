@@ -1,3 +1,9 @@
 # frozen_string_literal: true
 
-NEW_REDIS_CLIENT = ENV['REDISCLOUD_URL'] ? Redis.new(url: ENV['REDISCLOUD_URL']) : Redis.new
+class RedisHelper
+  class << self
+    def create_new_client
+      ENV['REDISCLOUD_URL'] ? Redis.new(url: ENV['REDISCLOUD_URL']) : Redis.new
+    end
+  end
+end
