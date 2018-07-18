@@ -9,7 +9,7 @@ Things you may want to cover:
 
 1. `redis-server`
 
-2. `bundle exec rake lottery_channel_monitor:run`
+2. `bundle exec rake dispatch_window_channels_monitor:run`
 
 3. `rails s`
 

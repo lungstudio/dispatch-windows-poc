@@ -2,7 +2,10 @@
 
 namespace :dispatch_window_channels_monitor do
   task run: :environment do
-    puts 'hehehehehehahahahaha'
+    logger           = Logger.new(STDOUT)
+    logger.level     = Logger::INFO
+    Rails.logger     = logger
+
     Rails.logger.info('dispatch_window_channels_monitor.rake - before signal trap')
     # Trap ^C
     Signal.trap('INT') do
