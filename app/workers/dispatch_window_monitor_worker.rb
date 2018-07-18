@@ -61,6 +61,7 @@ class DispatchWindowMonitorWorker
       Rails.logger.error e.backtrace.join("\n")
     ensure
       Rails.logger.info("DispatchWindowMonitorWorker.create_dispatch_window_subscription_thread - END, order_id: #{order_id}")
+      Rails.logger.flush
     end
   end
 
