@@ -28,10 +28,9 @@ class DispatchWindowMonitorWorker
   private
 
   def create_dispatch_window_subscription_thread(order_id)
-    Thread.new(order_id, DISPATCH_WINDOW_INTERVAL_SEC) do |order_id, dispatch_window_interval|
+    t = Thread.new(order_id, DISPATCH_WINDOW_INTERVAL_SEC) do |order_id, dispatch_window_interval|
       Rails.logger.info("DispatchWindowMonitorWorker.create_dispatch_window_subscription_thread - START, order_id: #{order_id}")
       redis = NEW_REDIS_CLIENT
-      Rails.logger.debug("DispatchWindowMonitorWorker.create_dispatch_window_subscription_thread - redis: #{redis.inspect}")
 
       drivers = []
       start_time = Time.current
@@ -39,7 +38,6 @@ class DispatchWindowMonitorWorker
       redis.without_reconnect do
         redis.subscribe_with_timeout(dispatch_window_interval, "order:#{order_id}:request") do |on|
           on.message do |_, msg|
-            Rails.logger.debug("DispatchWindowMonitorWorker.create_dispatch_window_subscription_thread - msg received: #{msg}")
             driver_id = parse_driver_id(msg)
             drivers.push(driver_id) if driver_id
           end
@@ -61,8 +59,9 @@ class DispatchWindowMonitorWorker
       Rails.logger.error e.backtrace.join("\n")
     ensure
       Rails.logger.info("DispatchWindowMonitorWorker.create_dispatch_window_subscription_thread - END, order_id: #{order_id}")
-      Rails.logger.flush
     end
+
+    t.join
   end
 
   def parse_driver_id(raw_msg)
