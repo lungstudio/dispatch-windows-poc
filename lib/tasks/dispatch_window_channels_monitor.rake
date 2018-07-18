@@ -2,11 +2,6 @@
 
 namespace :dispatch_window_channels_monitor do
   task run: :environment do
-    logger           = Logger.new(STDOUT)
-    logger.level     = Logger::DEBUG
-    Rails.logger     = logger
-    $stdout.sync = true
-
     Rails.logger.info('dispatch_window_channels_monitor.rake - before signal trap')
     # Trap ^C
     Signal.trap('INT') do
