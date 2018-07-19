@@ -64,8 +64,6 @@ class UsersController < ApplicationController
   def create_order
     @order = Order.create!(user_id: params[:id])
 
-    # code to push to orders channel for driver to pick
-
     redirect_to @order
   end
 
