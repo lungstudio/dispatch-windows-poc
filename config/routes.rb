@@ -5,6 +5,9 @@ require 'sidekiq/web'
 Rails.application.routes.draw do
   mount Sidekiq::Web => '/sidekiq'
 
+  post 'utils/reset_for_load_test', to: 'utils#reset_for_load_test'
+  delete 'utils/reset_all', to: 'utils#reset_all'
+
   namespace :api do
     resources :users, only: [:create] do
       post 'create_order' => 'users#create_order'
@@ -14,8 +17,6 @@ Rails.application.routes.draw do
       post 'pick' => 'drivers#pick'
     end
   end
-
-  delete 'utils/reset_all', to: 'utils#reset_all'
 
   resources :orders do
     member do

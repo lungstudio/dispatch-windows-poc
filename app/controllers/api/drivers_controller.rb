@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class Api::DriversController < ApplicationController
   LOTTERY_TIMEOUT_SEC = (ENV['DISPATCH_WINDOW_SECOND']&.to_i || 10) + 5
 

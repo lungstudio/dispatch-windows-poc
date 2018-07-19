@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class Api::UsersController < ApplicationController
   def create
     u = User.create!(name: params[:name])
