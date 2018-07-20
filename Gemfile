@@ -41,8 +41,6 @@ gem 'bootsnap', '>= 1.1.0', require: false
 
 gem 'hiredis'
 
-gem 'sidekiq'
-
 gem 'aasm'
 
 group :development, :test do
@@ -65,7 +63,6 @@ group :test do
   gem 'selenium-webdriver'
   # Easy installation and use of chromedriver to run system tests with Chrome
   gem 'chromedriver-helper'
-  gem 'rspec-sidekiq'
 end
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem

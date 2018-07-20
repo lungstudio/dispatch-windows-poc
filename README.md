@@ -1,20 +1,23 @@
 # README
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+### To run the POC:
 
-Things you may want to cover:
+1. `rails db:reset db:migrate`
+2. `redis-server`
+3. `bundle exec rake dispatch_window_channels_monitor:run`
+4. `rails s`
 
-1. db migration
+### To create order:
+``curl -X POST \
+    http://localhost:3000/api/orders``
+    
+### To list pending orders:
+``curl -X GET \
+    http://localhost:3000/api/orders``
 
-1. `redis-server`
-
-2. `bundle exec rake dispatch_window_channels_monitor:run`
-
-3. `rails s`
-
-4. http://localhost:3000/users --> create users, http://localhost:3000/drivers --> create drivers,  http://localhost:3000/orders --> create orders
-
-5. can create order through http://localhost:3000/users/{id}
-
-6. don't want to type so much, ask @gogolung directly :trollface:
+### To pick and order:
+replace the order id in the request body  
+``curl -X POST \
+    http://localhost:3000/api/drivers/pick \
+    -H 'Content-Type: application/json' \
+    -d '{ "order_id": 2 }'``

@@ -12,7 +12,7 @@ class Api::DriversController < ApplicationController
 
     lottery_end_time_key = "order:#{order.id}:lottery_end_time"
     order_request_channel_name = "order:#{order.id}:request"
-    driver_id = params[:driver_id]
+    driver_id = request.uuid
 
     # check lottery_end_time on redis
     lottery_end_time = redis.get(lottery_end_time_key)
