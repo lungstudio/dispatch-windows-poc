@@ -36,6 +36,13 @@ replace the order id in the request body
 
 ### load test configurations
 `#{PROJECT_ROOT}/load_test/locust/locustfile.py`
+Test special configs:  
+- DRIVER_PICK_RATE:  
+  the possibilty that a driver would pick this order, between 0 and 1
+- DRIVER_POLL_INTERVAL:  
+  how frequent a driver checks the order list
+
+Locust configs: 
 - `min_wait` & `max_wait`:  
     In addition to the task_set attribute, one usually wants to declare the min_wait and max_wait attributes. These are the minimum and maximum time respectively, in milliseconds, that a simulated user will wait between executing each task. min_wait and max_wait default to 1000, and therefore a locust will always wait 1 second between each task if min_wait and max_wait are not declared.
 

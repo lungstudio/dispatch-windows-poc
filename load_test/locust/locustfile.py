@@ -4,6 +4,8 @@ import polling
 import random
 import time
 
+DRIVER_PICK_RATE = 1.0      # the possibilty that a driver would pick this order, between 0 and 1
+DRIVER_POLL_INTERVAL = 1    # how frequent a driver checks the order list
 ORDERS = []
 
 class UserCreateOrderBehaviour(TaskSet):
@@ -19,7 +21,7 @@ class DriverPickOrderBehaviour(TaskSet):
         # poll ORDERS list for any new pending orders
         self.poll_order()
 
-        if ORDERS:
+        if ORDERS and random.random() < DRIVER_PICK_RATE:
             # order found! randomly pick one, and introduce a random delay within 3sec before picking
             order_id = random.choice(ORDERS)
             time.sleep(random.random() * 3)
@@ -37,7 +39,7 @@ class DriverPickOrderBehaviour(TaskSet):
     def poll_order(self):
         polling.poll(
             lambda: ORDERS,
-            step=0.5,
+            step=DRIVER_POLL_INTERVAL,
             check_success=self.is_orders_exist,
             poll_forever=True
         )
