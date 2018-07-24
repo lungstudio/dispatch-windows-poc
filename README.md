@@ -41,6 +41,8 @@ Test special configs:
   the possibilty that a driver would pick this order, between 0 and 1
 - DRIVER_POLL_INTERVAL:  
   how frequent a driver checks the order list
+- DRIVER_PICK_MAX_DELAY:  
+  the maximum time the driver will delay picking after polling
 
 Locust configs: 
 - `min_wait` & `max_wait`:  

@@ -21,6 +21,7 @@ class Order < ApplicationRecord
     redis = RedisHelper.create_new_client
     redis.publish("order:#{id}:request", 'start_lottery')
     redis.set("order:#{id}:lottery_end_time", lottery_end_time)
+    redis.close()
   end
 
   def lottery_end_time

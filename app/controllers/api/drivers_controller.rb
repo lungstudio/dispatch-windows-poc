@@ -56,6 +56,7 @@ class Api::DriversController < ApplicationController
     end
   ensure
     Rails.logger.info('DriversController.pick- END')
+    redis.close()
   end
 
   private

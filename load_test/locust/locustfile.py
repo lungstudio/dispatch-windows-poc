@@ -4,8 +4,13 @@ import polling
 import random
 import time
 
+# https://github.com/locustio/locust/issues/638
+import resource
+resource.setrlimit(resource.RLIMIT_NOFILE, (10240, 9223372036854775807))
+
 DRIVER_PICK_RATE = 1.0      # the possibilty that a driver would pick this order, between 0 and 1
-DRIVER_POLL_INTERVAL = 1    # how frequent a driver checks the order list
+DRIVER_POLL_INTERVAL = 0.5  # how frequent a driver checks the order list
+DRIVER_PICK_MAX_DELAY = 2   # the maximum time the driver will delay picking after polling
 ORDERS = []
 
 class UserCreateOrderBehaviour(TaskSet):
@@ -24,7 +29,8 @@ class DriverPickOrderBehaviour(TaskSet):
         if ORDERS and random.random() < DRIVER_PICK_RATE:
             # order found! randomly pick one, and introduce a random delay within 3sec before picking
             order_id = random.choice(ORDERS)
-            time.sleep(random.random() * 3)
+            if DRIVER_PICK_MAX_DELAY:
+                time.sleep(random.random() * DRIVER_PICK_MAX_DELAY)
 
             # pick the order
             with self.client.post('/api/drivers/pick', { 'order_id' : order_id }, catch_response=True) as res:
@@ -51,7 +57,7 @@ class DriverPickOrderBehaviour(TaskSet):
 class UserLocust(HttpLocust):
     task_set = UserCreateOrderBehaviour
     min_wait = 5000
-    max_wait = 10000
+    max_wait = 6000
     weight = 1
 
 class DriverLocust(HttpLocust):
