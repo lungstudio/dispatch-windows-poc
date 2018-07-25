@@ -2,7 +2,7 @@
 
 require 'test_helper'
 
-class OrderTest < ActiveSupport::TestCase
+class Api::UtilsControllerTest < ActionDispatch::IntegrationTest
   # test "the truth" do
   #   assert true
   # end

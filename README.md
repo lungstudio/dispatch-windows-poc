@@ -10,41 +10,35 @@
 ### To create order:
 ``curl -X POST \
     http://localhost:3000/api/orders``
-    
-### To list pending orders:
-``curl -X GET \
-    http://localhost:3000/api/orders``
 
 ### To pick an order:
 replace the order id in the request body  
 ``curl -X POST \
     http://localhost:3000/api/drivers/pick \
     -H 'Content-Type: application/json' \
-    -d '{ "order_id": 2 }'``
+    -d '{ "order_id": "69bac661-75d0-4cf1-991d-c0e8dc41910d" }'``
 
-### To delete all orders:
-``curl -X DELETE \
-    http://localhost:3000/api/orders/delete_all``
+### To flush redis:
+``curl -X POST \
+    http://localhost:3000/api/utils/flush_redis``
 
 ## Locust Load Test
 1. install locust [here](https://docs.locust.io/en/stable/installation.html)
 2. `pip install polling`
 3. cd to `#{PROJECT_ROOT}/load_test/locust`
-4. `locust -f locustfile.py UserLocust DriverLocust --host=http://localhost:3000`, change the host manually
+4. `locust -f locustfile.py UserLocust DriverLocust`
 5. go to `http://127.0.0.1:8089/` for locust dashboard
 6. start test from dashboard
 
 ### load test configurations
 `#{PROJECT_ROOT}/load_test/locust/locustfile.py`
 Test special configs:  
-- DRIVER_PICK_RATE:  
-  the possibilty that a driver would pick this order, between 0 and 1
 - DRIVER_POLL_INTERVAL:  
   how frequent a driver checks the order list
-- DRIVER_PICK_MAX_DELAY:  
-  the maximum time the driver will delay picking after polling
 
 Locust configs: 
+- `host`:  
+    The host
 - `min_wait` & `max_wait`:  
     In addition to the task_set attribute, one usually wants to declare the min_wait and max_wait attributes. These are the minimum and maximum time respectively, in milliseconds, that a simulated user will wait between executing each task. min_wait and max_wait default to 1000, and therefore a locust will always wait 1 second between each task if min_wait and max_wait are not declared.
 

@@ -1,18 +1,30 @@
 # frozen_string_literal: true
 
 class Api::OrdersController < ApplicationController
-  # get all pending order ids
-  def index
-    orders = Order.where(status: 'pending')&.pluck(:id) || []
-    render json: orders
-  end
+  LOTTERY_INTERVAL_SEC = ENV['DISPATCH_WINDOW_SECOND']&.to_i || 3
 
   def create
-    o = Order.create!(user_id: request.uuid)
-    render json: { order: o }
+    id = SecureRandom.uuid
+
+    order = {
+      id: id,
+      driver_id: nil,
+      user_id: request.uuid,
+      status: :pending
+    }
+
+    redis = RedisHelper.create_new_client
+    redis.set("order:#{id}", order.to_json)
+    redis.publish("order:#{id}:request", 'start_lottery')
+    redis.set("order:#{id}:lottery_end_time", lottery_end_time)
+    redis.close
+
+    render json: { order: order }
   end
 
-  def delete_all
-    Order.delete_all
+  private
+
+  def lottery_end_time
+    ((Time.current.to_f + LOTTERY_INTERVAL_SEC) * 1000).to_i # store with millisecond, as the timeframe is small therefore milliseconds should count
   end
 end

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class DispatchWindowMonitorWorker
-  DISPATCH_WINDOW_INTERVAL_SEC = ENV['DISPATCH_WINDOW_SECOND']&.to_i || 10
+  DISPATCH_WINDOW_INTERVAL_SEC = ENV['DISPATCH_WINDOW_SECOND']&.to_i || 3
 
   def perform
     Rails.logger.info('DispatchWindowMonitorWorker.perform - START')
@@ -13,9 +13,9 @@ class DispatchWindowMonitorWorker
     redis.psubscribe('order:*:request') do |on|
       on.pmessage do |_, channel, msg|
         if msg == 'start_lottery'
-          order_id = channel.split(':')&.at(1)&.to_i
+          order_id = channel.split(':')&.at(1)
 
-          return if order_id.blank? || order_id <= 0
+          return if order_id.blank?
 
           create_dispatch_window_subscription_thread(order_id)
         end
@@ -47,19 +47,19 @@ class DispatchWindowMonitorWorker
       end
 
       Rails.logger.info("DispatchWindowMonitorWorker.create_dispatch_window_subscription_thread - order_id: #{order_id}, subscribe time: #{(Time.current - start_time).to_f}s")
-      Rails.logger.info("DispatchWindowMonitorWorker.create_dispatch_window_subscription_thread - order_id: #{order_id}, drivers participated: #{drivers.as_json}")
+      Rails.logger.info("DispatchWindowMonitorWorker.create_dispatch_window_subscription_thread - order_id: #{order_id}, no of drivers participated: #{drivers.size}")
 
       if drivers.any?
         winner_id = DispatchWindowWinnerPickerService.pick(drivers)
         Rails.logger.info("DispatchWindowMonitorWorker.create_dispatch_window_subscription_thread - order_id: #{order_id}, winner: #{winner_id}")
-        redis.publish("order:#{order_id}:request", { winner_id: winner_id }.to_json)
+        redis.publish("order:#{order_id}:request", { winner_id: winner_id, no_of_drivers: drivers.size }.to_json)
       end
     rescue StandardError => e
       Rails.logger.error e.message
       Rails.logger.error e.backtrace.join("\n")
     ensure
       Rails.logger.info("DispatchWindowMonitorWorker.create_dispatch_window_subscription_thread - END, order_id: #{order_id}")
-      redis.close()
+      redis.close
     end
   end
 
